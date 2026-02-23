@@ -603,7 +603,7 @@ export default function Home() {
             </motion.div>
 
             {/* Images Grid */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-4 max-w-3xl mx-auto">
               {imagePreviews.map((item, index) => (
                 <motion.div
                   key={index}
@@ -645,7 +645,7 @@ export default function Home() {
             </div>
 
             {/* Videos Row */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto mt-3 sm:mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-4 max-w-4xl mx-auto mt-4">
               {videoPreviews.map((item, index) => (
                 <motion.div
                   key={index}
