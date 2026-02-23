@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import Hls from 'hls.js'
 import {
   Instagram,
   Twitter,
@@ -44,12 +45,12 @@ const languages: LanguageOption[] = [
 const translations = {
   en: {
     verifiedCreator: 'Verified Creator',
-    tagline: 'Content creator, dreamer, and your favorite digital companion. Join me for an exclusive journey.',
+    tagline: 'Pure Colombian energy. Sweet face, boldest curves',
     joinExclusive: 'Join Exclusive',
     followMe: 'Follow Me',
-    followers: 'Followers',
-    exclusivePosts: 'Exclusive Posts',
-    happySubscribers: 'Happy Subscribers',
+    stat1Label: 'Colombian',
+    stat2Label: 'Spicy Content',
+    stat3Label: 'Premium Quality',
     latestContent: 'Latest Content',
     sneakPeek: 'Sneak',
     peekHighlight: 'Peek',
@@ -75,8 +76,10 @@ const translations = {
     subscribed: 'Subscribed!',
     noSpam: 'No spam, ever. Unsubscribe anytime.',
     allRights: 'All rights reserved.',
-    exclusiveContent: 'Exclusive Content',
-    exclusiveContentDesc: 'Premium photos, videos & behind-the-scenes',
+    fansly: 'Fansly',
+    fanslyDesc: 'Exclusive content & premium access',
+    onlyfans: 'OnlyFans',
+    onlyfansDesc: 'Premium photos, videos & behind-the-scenes',
     instagramDesc: '@lyalush • Daily updates & stories',
     twitterDesc: '@lyalush • Thoughts & interactions',
     youtubeDesc: 'Vlogs, tutorials & more',
@@ -97,12 +100,12 @@ const translations = {
   },
   de: {
     verifiedCreator: 'Verifizierter Creator',
-    tagline: 'Content Creator, Träumerin und deine liebste digitale Begleiterin. Begleite mich auf einer exklusiven Reise.',
+    tagline: 'Pure kolumbianische Energie. Süßes Gesicht, krasseste Kurven.',
     joinExclusive: 'Exklusiv beitreten',
     followMe: 'Folge mir',
-    followers: 'Follower',
-    exclusivePosts: 'Exklusive Beiträge',
-    happySubscribers: 'Zufriedene Abonnenten',
+    stat1Label: 'Kolumbianerin',
+    stat2Label: 'Heißer Content',
+    stat3Label: 'Premium Qualität',
     latestContent: 'Neueste Inhalte',
     sneakPeek: 'Ein kleiner',
     peekHighlight: 'Vorgeschmack',
@@ -128,8 +131,10 @@ const translations = {
     subscribed: 'Abonniert!',
     noSpam: 'Kein Spam, niemals. Jederzeit abmelden.',
     allRights: 'Alle Rechte vorbehalten.',
-    exclusiveContent: 'Exklusive Inhalte',
-    exclusiveContentDesc: 'Premium Fotos, Videos & Behind-the-Scenes',
+    fansly: 'Fansly',
+    fanslyDesc: 'Exklusive Inhalte & Premium-Zugang',
+    onlyfans: 'OnlyFans',
+    onlyfansDesc: 'Premium Fotos, Videos & Behind-the-Scenes',
     instagramDesc: '@lyalush • Tägliche Updates & Stories',
     twitterDesc: '@lyalush • Gedanken & Interaktionen',
     youtubeDesc: 'Vlogs, Tutorials & mehr',
@@ -150,12 +155,12 @@ const translations = {
   },
   es: {
     verifiedCreator: 'Creador Verificado',
-    tagline: 'Creadora de contenido, soñadora y tu compañera digital favorita. Únete a mi viaje exclusivo.',
+    tagline: 'Pura energía colombiana. Cara dulce, curvas de infarto.',
     joinExclusive: 'Unirse Exclusivo',
     followMe: 'Sígueme',
-    followers: 'Seguidores',
-    exclusivePosts: 'Posts Exclusivos',
-    happySubscribers: 'Suscriptores Felices',
+    stat1Label: 'Colombiana',
+    stat2Label: 'Contenido Picante',
+    stat3Label: 'Calidad Premium',
     latestContent: 'Contenido Reciente',
     sneakPeek: 'Un',
     peekHighlight: 'Adelanto',
@@ -181,8 +186,10 @@ const translations = {
     subscribed: '¡Suscrito!',
     noSpam: 'Sin spam, nunca. Cancela cuando quieras.',
     allRights: 'Todos los derechos reservados.',
-    exclusiveContent: 'Contenido Exclusivo',
-    exclusiveContentDesc: 'Fotos premium, videos y detrás de cámaras',
+    fansly: 'Fansly',
+    fanslyDesc: 'Contenido exclusivo y acceso premium',
+    onlyfans: 'OnlyFans',
+    onlyfansDesc: 'Fotos premium, videos y detrás de cámaras',
     instagramDesc: '@lyalush • Actualizaciones diarias e historias',
     twitterDesc: '@lyalush • Pensamientos e interacciones',
     youtubeDesc: 'Vlogs, tutoriales y más',
@@ -224,6 +231,41 @@ const scaleIn = {
   visible: { opacity: 1, scale: 1 },
 }
 
+
+// HLS Video Component
+function HlsVideo({ src, className }: { src: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: false })
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {})
+      })
+      return () => hls.destroy()
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+      video.play().catch(() => {})
+    }
+  }, [src])
+
+  return (
+    <video
+      ref={videoRef}
+      className={className}
+      loop
+      muted
+      playsInline
+      autoPlay
+      draggable={false}
+    />
+  )
+}
 
 // Language Switcher Component
 function LanguageSwitcher({ 
@@ -303,50 +345,49 @@ function LanguageSwitcher({
 }
 
 export default function Home() {
-  const [email, setEmail] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
   const [currentLang, setCurrentLang] = useState<Language>('en')
-  
-  const t = translations[currentLang]
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitted(true)
-    setEmail('')
-    setTimeout(() => setIsSubmitted(false), 3000)
-  }
+  const t = translations[currentLang]
 
   // Dynamic Social Links with translations
   const socialLinks = [
     {
-      name: t.exclusiveContent,
-      description: t.exclusiveContentDesc,
+      name: t.fansly,
+      description: t.fanslyDesc,
       icon: Crown,
-      href: '#',
+      href: 'https://fansly.com/Lya_Lush/',
       primary: true,
       badge: 'VIP',
     },
     {
-      name: 'Instagram',
-      description: t.instagramDesc,
-      icon: Instagram,
-      href: '#',
-      followers: '1.2M',
+      name: t.onlyfans,
+      description: t.onlyfansDesc,
+      icon: Lock,
+      href: 'https://onlyfans.com/lya_lush',
+      primary: true,
+      badge: 'VIP',
     },
-    {
-      name: 'Twitter / X',
-      description: t.twitterDesc,
-      icon: Twitter,
-      href: '#',
-      followers: '450K',
-    },
-    {
-      name: 'YouTube',
-      description: t.youtubeDesc,
-      icon: Youtube,
-      href: '#',
-      followers: '800K',
-    },
+    // {
+    //   name: 'Instagram',
+    //   description: t.instagramDesc,
+    //   icon: Instagram,
+    //   href: '#',
+    //   followers: '1.2M',
+    // },
+    // {
+    //   name: 'Twitter / X',
+    //   description: t.twitterDesc,
+    //   icon: Twitter,
+    //   href: '#',
+    //   followers: '450K',
+    // },
+    // {
+    //   name: 'YouTube',
+    //   description: t.youtubeDesc,
+    //   icon: Youtube,
+    //   href: '#',
+    //   followers: '800K',
+    // },
   ]
 
   // Dynamic Features with translations
@@ -373,21 +414,18 @@ export default function Home() {
     },
   ]
 
-  // Dynamic Stats with translations
-  const stats = [
-    { value: '2.5M+', label: t.followers },
-    { value: '500+', label: t.exclusivePosts },
-    { value: '50K+', label: t.happySubscribers },
+  // Dynamic Content Previews with translations
+  const imagePreviews = [
+    { type: 'image' as const, label: t.photoSet, isNew: true, src: 'https://imagedelivery.net/2Bi2b3ZR7OB7v9uIHcSnmw/c14ca996-01c7-44b2-ca62-c472b30f5f00/public' },
+    { type: 'image' as const, label: t.exclusive, isNew: true, src: 'https://imagedelivery.net/2Bi2b3ZR7OB7v9uIHcSnmw/03ba0a4c-177a-421e-f70d-59ff82de3f00/public' },
+    { type: 'image' as const, label: t.photoSet, isNew: false, src: 'https://imagedelivery.net/2Bi2b3ZR7OB7v9uIHcSnmw/bf784022-a99b-4b9b-49ad-9d0025bdac00/public' },
+    { type: 'image' as const, label: t.exclusive, isNew: true, src: 'https://imagedelivery.net/2Bi2b3ZR7OB7v9uIHcSnmw/c9738506-b047-405d-e37b-a3547d61f200/public' },
   ]
 
-  // Dynamic Content Previews with translations
-  const contentPreviews = [
-    { type: 'image', label: t.photoSet, title: t.summerVibes, isNew: true },
-    { type: 'video', label: t.video, title: t.behindTheScenes, isNew: false },
-    { type: 'image', label: t.exclusive, title: t.goldenHour, isNew: true },
-    { type: 'image', label: t.photoSet, title: t.nightOut, isNew: false },
-    { type: 'video', label: t.video, title: t.qaSession, isNew: false },
-    { type: 'image', label: t.exclusive, title: t.weekendMood, isNew: true },
+  const videoPreviews = [
+    { type: 'video' as const, label: t.video, isNew: true, src: 'https://customer-ixkpt5q6n9uwmb0u.cloudflarestream.com/22df60602e151b18543f2848ce860e61/manifest/video.m3u8' },
+    { type: 'video' as const, label: t.video, isNew: false, src: 'https://customer-ixkpt5q6n9uwmb0u.cloudflarestream.com/27ecfa9fc8e5998a4cb8bac0f4105fc3/manifest/video.m3u8' },
+    { type: 'video' as const, label: t.video, isNew: false, src: 'https://customer-ixkpt5q6n9uwmb0u.cloudflarestream.com/11445cb41630dfbea8b1ba3801dda370/manifest/video.m3u8' },
   ]
 
   return (
@@ -419,7 +457,7 @@ export default function Home() {
               variants={scaleIn}
               className="relative w-40 h-40 sm:w-48 sm:h-48 mx-auto mb-8"
             >
-              <div className="absolute inset-0 rounded-full bg-gold-gradient p-[3px] animate-pulse-slow">
+              <div className="absolute inset-0 rounded-full bg-gold-gradient p-[3px]">
                 <div className="w-full h-full rounded-full bg-obsidian flex items-center justify-center">
                   <div className="w-[calc(100%-6px)] h-[calc(100%-6px)] rounded-full bg-gradient-to-br from-obsidian-light to-obsidian flex items-center justify-center overflow-hidden">
                     <Image
@@ -466,12 +504,29 @@ export default function Home() {
               {t.tagline}
             </motion.p>
 
+            {/* Stats Row */}
+            <motion.div
+              variants={fadeInUp}
+              className="flex items-center justify-center gap-8 sm:gap-12 mb-10"
+            >
+              {[
+                { emoji: '\u{1F1E8}\u{1F1F4}', label: t.stat1Label },
+                { emoji: '\u{1F525}', label: t.stat2Label },
+                { emoji: '\u{1F48E}', label: t.stat3Label },
+              ].map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-2xl mb-1">{stat.emoji}</div>
+                  <div className="text-sm text-white/60 font-medium">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
+
             {/* CTA Buttons */}
             <motion.div
               variants={fadeInUp}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
             >
-              <a href="#exclusive" className="btn-primary group">
+              <a href="https://fansly.com/Lya_Lush/" target="_blank" rel="noopener noreferrer" className="btn-primary group">
                 <Crown className="w-5 h-5 mr-2" />
                 {t.joinExclusive}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -482,18 +537,30 @@ export default function Home() {
               </a>
             </motion.div>
 
-            {/* Stats */}
-            <motion.div
+            {/* Social Media Icons - hidden for now */}
+            {/* <motion.div
               variants={fadeInUp}
-              className="flex items-center justify-center gap-8 sm:gap-12"
+              className="flex items-center justify-center gap-6"
             >
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold glow-text">{stat.value}</div>
-                  <div className="text-sm text-white/40">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
+              <a
+                href="#"
+                className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center hover:bg-gold/20 hover:border-gold/50 hover:scale-110 transition-all duration-300 group"
+              >
+                <Instagram className="w-5 h-5 text-gold group-hover:text-gold-light" />
+              </a>
+              <a
+                href="#"
+                className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center hover:bg-gold/20 hover:border-gold/50 hover:scale-110 transition-all duration-300 group"
+              >
+                <Twitter className="w-5 h-5 text-gold group-hover:text-gold-light" />
+              </a>
+              <a
+                href="#"
+                className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center hover:bg-gold/20 hover:border-gold/50 hover:scale-110 transition-all duration-300 group"
+              >
+                <Youtube className="w-5 h-5 text-gold group-hover:text-gold-light" />
+              </a>
+            </motion.div> */}
           </motion.div>
 
           {/* Scroll indicator */}
@@ -535,25 +602,24 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto">
-              {contentPreviews.map((item, index) => (
+            {/* Images Grid */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto">
+              {imagePreviews.map((item, index) => (
                 <motion.div
                   key={index}
                   variants={fadeInUp}
                   whileHover={{ scale: 1.02 }}
-                  className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-obsidian-light border border-white/5 group cursor-pointer"
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-obsidian-light border border-white/5 group cursor-pointer select-none"
                 >
-                  {/* Placeholder gradient background */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${
-                    index % 3 === 0 
-                      ? 'from-pink-neon/20 to-obsidian-light' 
-                      : index % 3 === 1 
-                        ? 'from-gold/20 to-obsidian-light'
-                        : 'from-purple-500/20 to-obsidian-light'
-                  }`} />
-                  
-                  {/* Lock overlay */}
-                  <div className="absolute inset-0 bg-obsidian/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <img
+                    src={item.src}
+                    alt=""
+                    className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${index === 2 ? 'blur-[10px] scale-110' : index >= 3 ? 'blur-[6px] scale-105' : ''}`}
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 z-10" />
+                  <div className="absolute inset-0 z-20 bg-obsidian/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center mx-auto mb-2">
                         <Lock className="w-5 h-5 text-gold" />
@@ -561,38 +627,65 @@ export default function Home() {
                       <span className="text-sm text-white/80">{t.subscribeToUnlock}</span>
                     </div>
                   </div>
-
-                  {/* Content type indicator */}
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 z-20">
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-obsidian/70 backdrop-blur-sm">
-                      {item.type === 'video' ? (
-                        <Play className="w-3 h-3 text-white/80 fill-white/80" />
-                      ) : (
-                        <ImageIcon className="w-3 h-3 text-white/80" />
-                      )}
+                      <ImageIcon className="w-3 h-3 text-white/80" />
                       <span className="text-xs text-white/80">{item.label}</span>
                     </div>
                   </div>
-
-                  {/* New badge */}
                   {item.isNew && (
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3 z-20">
                       <span className="px-2 py-0.5 text-xs font-bold bg-pink-neon text-white rounded-full">
                         NEW
                       </span>
                     </div>
                   )}
+                </motion.div>
+              ))}
+            </div>
 
-                  {/* Title at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-obsidian to-transparent">
-                    <h3 className="font-medium text-white text-sm">{item.title}</h3>
+            {/* Videos Row */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto mt-3 sm:mt-4">
+              {videoPreviews.map((item, index) => (
+                <motion.div
+                  key={index}
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.02 }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-obsidian-light border border-white/5 group cursor-pointer select-none"
+                >
+                  <HlsVideo
+                    src={item.src}
+                    className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${index === 0 || index === 2 ? 'blur-[6px] scale-105' : ''}`}
+                  />
+                  <div className="absolute inset-0 z-10" />
+                  <div className="absolute inset-0 z-20 bg-obsidian/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center mx-auto mb-2">
+                        <Lock className="w-5 h-5 text-gold" />
+                      </div>
+                      <span className="text-sm text-white/80">{t.subscribeToUnlock}</span>
+                    </div>
                   </div>
+                  <div className="absolute top-3 left-3 z-20">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-obsidian/70 backdrop-blur-sm">
+                      <Play className="w-3 h-3 text-white/80 fill-white/80" />
+                      <span className="text-xs text-white/80">{item.label}</span>
+                    </div>
+                  </div>
+                  {item.isNew && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <span className="px-2 py-0.5 text-xs font-bold bg-pink-neon text-white rounded-full">
+                        NEW
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
 
             <motion.div variants={fadeInUp} className="text-center mt-10">
-              <a href="#exclusive" className="btn-secondary group">
+              <a href="https://fansly.com/Lya_Lush/" target="_blank" rel="noopener noreferrer" className="btn-secondary group">
                 <Sparkles className="w-4 h-4 mr-2" />
                 {t.viewAllContent}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -722,79 +815,13 @@ export default function Home() {
 
             {/* CTA */}
             <motion.div variants={fadeInUp} className="text-center mt-12">
-              <a href="#" className="btn-primary">
+              <a href="https://onlyfans.com/lya_lush" target="_blank" rel="noopener noreferrer" className="btn-primary">
                 <Sparkles className="w-5 h-5 mr-2" />
                 {t.subscribeNow}
               </a>
               <p className="text-white/30 text-sm mt-4">
                 {t.joinSubscribers}
               </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="relative py-20">
-        <div className="section-container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={staggerContainer}
-            className="max-w-2xl mx-auto"
-          >
-            <motion.div
-              variants={scaleIn}
-              className="relative p-8 sm:p-12 rounded-3xl bg-obsidian-light border border-white/5 overflow-hidden"
-            >
-              {/* Background decoration */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-[80px]" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-neon/5 rounded-full blur-[60px]" />
-
-              <div className="relative text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gold/10 mb-6">
-                  <Mail className="w-8 h-8 text-gold" />
-                </div>
-                <h2 className="text-3xl font-display font-bold mb-3">
-                  {t.stayUpdated} <span className="glow-text">{t.updatedHighlight}</span>
-                </h2>
-                <p className="text-white/50 mb-8">
-                  {t.newsletterDesc}
-                </p>
-
-                <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t.enterEmail}
-                    required
-                    className="flex-1 px-5 py-4 bg-obsidian border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all"
-                  />
-                  <button
-                    type="submit"
-                    className="btn-primary whitespace-nowrap"
-                    disabled={isSubmitted}
-                  >
-                    {isSubmitted ? (
-                      <>
-                        <Heart className="w-5 h-5 mr-2 fill-current" />
-                        {t.subscribed}
-                      </>
-                    ) : (
-                      <>
-                        {t.subscribe}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <p className="text-white/30 text-xs mt-4">
-                  {t.noSpam}
-                </p>
-              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -808,7 +835,8 @@ export default function Home() {
               <span className="text-2xl font-display font-bold glow-text">Lya Lush</span>
             </div>
 
-            <div className="flex items-center gap-6">
+            {/* Social icons hidden for now */}
+            {/* <div className="flex items-center gap-6">
               <a href="#" className="text-white/40 hover:text-gold transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
@@ -818,7 +846,7 @@ export default function Home() {
               <a href="#" className="text-white/40 hover:text-gold transition-colors">
                 <Youtube className="w-5 h-5" />
               </a>
-            </div>
+            </div> */}
 
             <p className="text-white/30 text-sm">
               © {new Date().getFullYear()} Lya Lush. {t.allRights}
