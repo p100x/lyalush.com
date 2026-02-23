@@ -814,9 +814,6 @@ export default function Home() {
                 <Sparkles className="w-5 h-5 mr-2" />
                 {t.subscribeNow}
               </a>
-              <p className="text-white/30 text-sm mt-4">
-                {t.joinSubscribers}
-              </p>
             </motion.div>
           </motion.div>
         </div>
