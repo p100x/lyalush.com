@@ -754,12 +754,7 @@ export default function Home() {
                     </div>
                     <p className="text-sm text-white/50">{link.description}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {link.followers && (
-                      <span className="text-sm text-white/40">{link.followers}</span>
-                    )}
-                    <ExternalLink className="w-4 h-4 text-white/30 group-hover:text-gold transition-colors" />
-                  </div>
+                  <ExternalLink className="w-4 h-4 text-white/30 group-hover:text-gold transition-colors" />
                 </motion.a>
               ))}
             </div>
